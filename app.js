@@ -10,7 +10,7 @@ var users = require('./routes/users');
 
 var app = express();
 var mongoose = require('mongoose');
-mongoose.connect('mongodb://localhost/userInfoApi', function(err){
+mongoose.connect('mongodb://localhost/nodeAPI', function(err){
 	if(err){
 		console.log('MongoDB connection error',err);
 	}else{
