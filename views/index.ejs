@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html ng-app="app">
+  <head>
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+  </head>
+  <body>
+    <h1><%= title %></h1>
+    <p>Welcome to <%= title %></p>
+	
+	<ng-view></ng-view>
+	
+	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.25/angular.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.25/angular-route.min.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.25/angular-resource.min.js"></script>
+	
+	<script type="text/ng-template" id="/userstotal.html">
+      Search User by name: 
+	  <input type="text" ng-model="search.name">
+	  <ul>
+        <li ng-repeat="user in users | filter: search">
+         <input type="checkbox" ng-model="user.completed">
+          <a ng-show="!editing[$index]" href="#/{{user._id}}">{{user.name}}</a>
+		  <button ng-show="!editing[$index]" ng-click="remove($index)">remove</button>
+          <button ng-show="!editing[$index]" ng-click="edit($index)">edit</button>
+          <input ng-show="editing[$index]" type="text" ng-model="user.name">
+          <button ng-show="editing[$index]" ng-click="update($index)">update</button>
+          <button ng-show="editing[$index]" ng-click="cancel($index)">cancel</button>
+		 <p> userID: {{user.user_id}}</p>
+       </li>
+      </ul>
+	  Create a New User: <input type="text" ng-model = "newU">
+	  Type the New User PassWord: <input type="password" ng-model = "Ups">
+	  <button ng-click="save()">Create</button>
+	 </script>
+	 
+	 <script type="text/ng-template" id="/usersDetails.html">
+      <h3>UserName: {{ user.name }}</h3>
+	  password: <textarea>{{ user.password }}</textarea>
+	  completed: <input type="checkbox" ng-model="user.completed"><br>
+     <button ng-click="update()">update</button>
+	 <button ng-click="remove()">remove</button>
+      <a href="/">Cancel</a>
+     
+    </script>
+	
+	 
+	 <script>
+	  angular.module('app', ['ngRoute','ngResource'])
+	 //Services
+	 .factory('Users', ['$resource', function($resource){
+          return $resource('/users/:id',null,{
+		  'update':{method:'PUT'}});
+        }])
+	 //Contollers
+	 .controller('UserController',['$scope','Users',function($scope,Users){
+	 $scope.editing=[];
+	  $scope.users = Users.query();
+	  
+	  $scope.save = function(){
+				if(!$scope.newU || $scope.newU.length<1) return;
+				var newuser = new Users({name:$scope.newU, password: $scope.Ups, user_id:0});
+				
+				newuser.$save(function(){
+				$scope.users.push(newuser);
+				$scope.newU = ' ';
+				});
+			}
+			
+      $scope.update = function(index){
+             var user = $scope.users[index];
+             Users.update({id: user._id}, user);
+             $scope.editing[index] = false;
+         }
+ 
+         $scope.edit = function(index){
+          $scope.editing[index] = angular.copy($scope.users[index]);
+         }
+ 
+         $scope.cancel = function(index){
+             $scope.users[index] = angular.copy($scope.editing[index]);
+            $scope.editing[index] = false;
+          }
+		  
+		  $scope.remove = function(index){
+             var user = $scope.users[index];
+             Users.remove({id: user._id}, function(){
+               $scope.users.splice(index, 1);
+             });
+           }
+	 }])
+	 .controller('UserDetailCtrl', ['$scope', '$routeParams', 'Users', '$location', function ($scope, $routeParams, Users) {
+          $scope.user = Users.get({id:$routeParams.id});
+		  
+		  $scope.update = function(){
+           Users.update({id: $scope.user._id}, $scope.user, function(){
+               $location.url('/');
+            });
+          }
+		  $scope.remove = function(){
+             Users.remove({id: $scope.user._id}, function(){
+               $location.url('/');
+            });
+           }
+        }])
+
+        // Routes
+
+        .config(['$routeProvider', function ($routeProvider) {
+          $routeProvider
+            .when('/', {
+              templateUrl: '/userstotal.html',
+              controller: 'UserController'
+            })
+
+            .when('/:id', {
+              templateUrl: '/usersDetails.html',
+              controller: 'UserDetailCtrl'
+           });
+        }]);
+		</script>
+  </body>
+</html>
